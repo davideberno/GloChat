@@ -11,30 +11,24 @@ const NavBar = props => {
 
   return (
     <Navbar
-      className="nav justify-content-end  d-flex "
+      className=" navbar- flex-row-reverse d-flex "
       style={{
         backgroundColor: "#4056a1"
       }}
     >
       <Navbar.Brand>
-        <Link
+        {/* <Link
           className="text-white"
           style={{ textDecoration: "none", fontSize: "25px" }}
           to="/"
         >
           GloChat
-        </Link>
+        </Link> */}
       </Navbar.Brand>
-      <Nav className="mr-auto">
+
+      <Nav className="flex-row-reverse d-flex  ">
         {props.user ? (
           <React.Fragment>
-            <Link
-              className="text-white ml-4"
-              style={{ textDecoration: "none", fontSize: "20px" }}
-              to="/"
-            >
-              Chat
-            </Link>
             <Link
               className="text-white ml-4"
               style={{ textDecoration: "none", fontSize: "20px" }}
@@ -46,27 +40,59 @@ const NavBar = props => {
             <Link
               className="text-white ml-4"
               style={{ textDecoration: "none", fontSize: "20px" }}
+              to="/About"
+            >
+              About
+            </Link>
+
+            <Link
+              className="text-white ml-4"
+              style={{ textDecoration: "none", fontSize: "20px" }}
               to="/Settings"
             >
               Settings
             </Link>
             <Link
               className="text-white ml-4"
-              style={{ textDecoration: "none", fontSize: "20px" }}
-              to="/About"
+              style={{
+                textDecoration: "none",
+                fontSize: "20px"
+              }}
+              to="/"
             >
-              About
+              Chat
             </Link>
+            <div className="d-flex justify-content-start ">
+              <img
+                src={props.user.profilePic}
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  alt: "user-image"
+                }}
+              />
+              <p
+                style={{
+                  color: "white",
+                  fontSize: "20px",
+                  display: "flex",
+                  alignItems: "  flex-end"
+                }}
+              >
+                Welcome ! {props.user.username}
+              </p>
+            </div>
           </React.Fragment>
         ) : (
           <React.Fragment>
-            <Link
+            <a
               className="text-white ml-4"
               style={{ textDecoration: "none", fontSize: "20px" }}
-              to="/signup"
+              href={`${process.env.REACT_APP_SERVER_URL || ""}/auth/google`}
             >
-              Signup
-            </Link>
+              Sign in with Google
+            </a>
+
             <Link
               className="text-white ml-4"
               style={{ textDecoration: "none", fontSize: "20px" }}
@@ -78,9 +104,9 @@ const NavBar = props => {
             <Link
               className="text-white ml-4"
               style={{ textDecoration: "none", fontSize: "20px" }}
-              to="/auth/google"
+              to="/signup"
             >
-              Sign in with Google
+              Signup
             </Link>
           </React.Fragment>
         )}

@@ -78,11 +78,15 @@ router.get("/google", passport.authenticate("google", { scope: ["profile"] }));
 
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/auth/login" }),
-  function(req, res) {
-    // Successful authentication, redirect home.
-    console.log(res);
-  }
+  passport.authenticate("google", {
+    failureRedirect: "/auth/login",
+    successRedirect: process.env.SUCCESS_REDIRECT
+  })
+  // function(req, res) {
+  //   // Successful authentication, redirect home.
+  //   console.log(res);
+
+  // }
 );
 
 router.post("/login", (req, res, next) => {

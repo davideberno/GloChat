@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Container, Row, Col, Button, Form } from "react-bootstrap";
+import { Container, Row, Col, Button, Form, Navbar } from "react-bootstrap";
 import ScrollToBottom from "react-scroll-to-bottom";
 import io from "socket.io-client";
 import axios from "axios";
@@ -17,6 +17,7 @@ class Chat extends Component {
     onlineUsers: [],
     messages: [],
     message: "",
+    profilePic: "",
     roomId: "",
     rooms: [],
     search: "",
@@ -187,6 +188,18 @@ class Chat extends Component {
       this.setState({
         rooms: res.data
       });
+    });
+  };
+  componentDidMount = () => {
+    console.log("hello");
+    axios.get("/api/test").then(user => {
+      console.log(user.data);
+      this.setState(
+        {
+          profilePic: user.data.profilePic
+        },
+        () => console.log(this.state.profilePic)
+      );
     });
   };
 

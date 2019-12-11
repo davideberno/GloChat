@@ -40,7 +40,7 @@ class Login extends Component {
   render() {
     console.log(this.props);
     return (
-      <div className="container border border-secondary p-4 mt-4 mr-auto ml-auto col-md-3 ">
+      <div className="container border border-secondary p-4 mt-4 mr-auto ml-auto col-md-4  ">
         <h2 className="text-center" style={{ fontWeight: "bold" }}>
           Login
         </h2>
