@@ -1,5 +1,6 @@
 import React, { Component } from "react";
-import { Container, Row, Col, Button } from "react-bootstrap";
+import { Container, Row, Col, Button, Form, Navbar } from "react-bootstrap";
+import ScrollToBottom from "react-scroll-to-bottom";
 import io from "socket.io-client";
 import axios from "axios";
 import Users from "./Users";
@@ -16,38 +17,55 @@ class Chat extends Component {
     onlineUsers: [],
     messages: [],
     message: "",
+    profilePic: "",
     roomId: "",
     rooms: [],
     search: "",
-    socketId: socket.id
+    socketId: socket.id,
+    listeLanguages: {},
+    defaultLanguage: this.props.user.defaultLanguage
   };
 
   componentDidMount = () => {
     axios
+      .get(
+        "https://api.cognitive.microsofttranslator.com/languages?api-version=3.0"
+      )
+      .then(listeCountry => {
+        this.setState({
+          listeLanguages: listeCountry.data.dictionary
+        });
+        //  console.log(this.state.listeLanguages);
+
+        //   const arr = Object.entries(this.state.listeLanguages);
+        //   arr.map(item => {
+        //    console.log(item[0]);
+        //      console.log(item[1].name);
+        //   });
+      })
+      .catch(err => console.log(err));
+
+    axios
       .get("http://geoplugin.net/json.gp")
       .then(resp => {
         const { geoplugin_countryCode, geoplugin_city } = resp.data;
-
-        axios.get("/rooms").then(res => {
-          socket.emit("new_user", this.state.user);
-          socket.on("users", users => {
-            this.setState({
-              onlineUsers: users,
-              rooms: res.data,
-              user: {
-                ...this.props.user,
-                isOnline: true,
-                connection: {
-                  countryCode: geoplugin_countryCode,
-                  city: geoplugin_city
-                }
+        this.getRooms();
+        socket.emit("new_user", this.state.user);
+        socket.on("users", users => {
+          this.setState({
+            onlineUsers: users,
+            user: {
+              ...this.props.user,
+              isOnline: true,
+              connection: {
+                countryCode: geoplugin_countryCode,
+                city: geoplugin_city
               }
-            });
+            }
           });
         });
 
         socket.on("message", message => {
-          console.log(message);
           //this.getMessages(this.state.roomId);
           this.setState({
             messages: [...this.state.messages, message]
@@ -89,22 +107,23 @@ class Chat extends Component {
     this.setState({
       roomId: room._id
     });
+    this.getMessages(room);
   };
 
   joinPrivate = user => {
-    console.log(user);
     socket.emit("joinPrivate", { user1: this.state.user, user2: user });
     socket.on("welcome", message => {
       console.log(message);
+      this.getRooms();
     });
     socket.on("room", room => {
-      console.log(room);
       this.setState(
         {
           roomId: room[0]._id
         },
-        () => this.getMessages(room[0])
+        () => this.joinRoom(room[0])
       );
+      this.getRooms();
     });
   };
 
@@ -124,25 +143,44 @@ class Chat extends Component {
   };
 
   getMessages = room => {
-    console.log("GETMESSAGES", room);
     axios
       .get(`/messages/${room._id}`)
       .then(res => {
         this.setState({
           messages: res.data
         });
-        this.joinRoom(room);
       })
       .catch(err => console.log(err));
   };
 
+  getRooms = () => {
+    axios.get("/rooms").then(res => {
+      this.setState({
+        rooms: res.data
+      });
+    });
+  };
+  componentDidMount = () => {
+    console.log("hello");
+    axios.get("/api/test").then(user => {
+      console.log(user.data);
+      this.setState(
+        {
+          profilePic: user.data.profilePic
+        },
+        () => console.log(this.state.profilePic)
+      );
+    });
+  };
+
   render() {
+    console.log(this.state);
     return (
       <Container>
         <Row
           className="mt-4"
           style={{
-            height: "500px"
+            height: "550px"
           }}
         >
           <Col xs={3} className="bg-light">
@@ -160,9 +198,9 @@ class Chat extends Component {
                   Search
                 </button>
               </form>
+
               {this.state.users.map(user => {
                 if (
-                  //this.state.onlineUsers &&
                   this.state.onlineUsers
                     .map(x => {
                       return x && x._id;
@@ -195,9 +233,14 @@ class Chat extends Component {
             </Container>
           </Col>
           <Col xs={6} id="chat" className="bg-primary">
-            {this.state.messages.map(msg => {
-              return <Message msg={msg} key={msg._id} />;
-            })}
+            <ScrollToBottom className="messages">
+              {this.state.messages.map(msg => {
+                return (
+                  <Message user={this.state.user} msg={msg} key={msg._id} />
+                );
+              })}
+            </ScrollToBottom>
+
             <form onSubmit={this.sendMessage}>
               <input
                 type="text"
@@ -206,12 +249,35 @@ class Chat extends Component {
                 value={this.state.message}
                 onChange={this.handleChange}
               />
+
+              <Form.Group controlId="exampleForm.ControlSelect1">
+                <Form.Label style={{ fontWeight: "500" }}>
+                  Select your language
+                </Form.Label>
+
+                <Form.Control
+                  as="select"
+                  value={this.state.defaultLanguage}
+                  onChange={this.handleChange}
+                  name="defaultLanguage"
+                >
+                  {Object.entries(this.state.listeLanguages).map(country => {
+                    return (
+                      <option key={country[0]}>
+                        {" "}
+                        {country[0]} - {country[1].name}{" "}
+                      </option>
+                    );
+                  })}
+                </Form.Control>
+              </Form.Group>
+
               <button className="btn btn-light ml-4" type="submit">
                 Send
               </button>
             </form>
           </Col>
-          <Users rooms={this.state.rooms} getMessages={this.getMessages} />
+          <Users rooms={this.state.rooms} joinRoom={this.joinRoom} />
         </Row>
       </Container>
     );

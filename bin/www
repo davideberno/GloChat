@@ -33,10 +33,9 @@ let endpoint = process.env[endpoint_var];
 
 // async function message(text, arr) {
 
-
 async function messageFromFrontEnd(text, lgTrans) {
-  lgTransCode = lgTrans.substr(0,lgTrans.indexOf(' '));
-  console.log(lgTransCode)
+  lgTransCode = lgTrans.substr(0, lgTrans.indexOf(" "));
+  console.log(lgTransCode);
   let message = {
     method: "POST",
     baseUrl: endpoint,
@@ -62,15 +61,6 @@ async function messageFromFrontEnd(text, lgTrans) {
   const result = response.body;
   return result;
 }
-
-// const foo = async () =>{
-
-// let test = await message("Genau", ["pt", "en", "fr", "it"]);
-// console.log(test);
-
-// }
-
-// foo()
 
 app.use((err, req, res, next) => {
   // always log the error
@@ -106,7 +96,7 @@ server.on("error", error => {
 
 // const socketio = require("socket.io");
 // const io = socketio(server);
-
+module.exports = server;
 const io = require("socket.io").listen(server);
 const Message = require("../models/Message");
 const Room = require("../models/Room");
@@ -127,12 +117,25 @@ const emitUsers = () => {
   io.emit("users", getUsers());
 };
 
+const getUserSocket = user => {
+  let clients = io.sockets.clients().connected;
+  let sockets = Object.values(clients);
+  let usersSockets = sockets.filter(s => {
+    if (s.user) {
+      return { userId: s.user._id, socketId: s.id };
+    }
+  });
+  console.log(usersSockets);
+  const socket = usersSockets.find(
+    el => el.userId.toString() === user._id.toString()
+  );
+  return socket.socketId;
+};
+
 io.on("connection", socket => {
   console.log("Client connected", socket.id);
-  console.log(io.sockets.clients());
 
   socket.on("new_user", user => {
-    //console.log("New user:", user);
     socket.user = user;
     emitUsers();
   });
@@ -140,17 +143,23 @@ io.on("connection", socket => {
   socket.on("joinRoom", ({ user, room }) => {
     console.log(`User ${user.username} joined: ${room}`);
     socket.join(room);
-    //io.sockets.connected[socketID].join(roomName);
   });
 
   socket.on("joinPrivate", ({ user1, user2 }) => {
+    console.log(user2);
+    const usersOnline = getUsers();
+    // if (usersOnline.some(el => el._id.toString() === user2._id.toString())) {
+    // }
     Room.find({ users: { $all: [user1._id, user2._id] } })
       .then(room => {
+        //const user2SocketId = getUserSocket(user2);
+
         if (room.length > 0) {
           socket.emit("room", room);
+          //console.log(user2SocketId);
+          //io.to(`${user2SocketId}`).emit("room", room);
         } else {
           Room.create({ users: [user1._id, user2._id] }).then(newRoom => {
-            console.log(newRoom);
             User.findOneAndUpdate(
               { _id: user1._id },
               { $push: { rooms: newRoom._id } }
@@ -158,7 +167,7 @@ io.on("connection", socket => {
               User.findOneAndUpdate(
                 { _id: user2._id },
                 { $push: { rooms: newRoom._id } }
-              ).then(user => {
+              ).then(() => {
                 io.emit("welcome", `Welcome`);
               });
             });
@@ -168,81 +177,42 @@ io.on("connection", socket => {
       .catch(err => console.log(err));
   });
 
-  socket.on(
-    "message",
-    async ({ message, userId, username, roomId, socketId, defaultLanguage }) => {
-      const result = await messageFromFrontEnd(message, defaultLanguage);
-      const newMessage = result[0].translations;
-      const newAndImprovedMessage = newMessage[0].text;
+  socket.on("message", ({ message, userId, username, roomId, socketId }) => {
+    console.log("USER ID, MESSAGE SENT    ", userId, typeof userId);
 
-      console.log(newAndImprovedMessage)
+    // find the room
+    Room.findOne({ _id: roomId })
+      .populate("users")
+      .then(response => {
+        const [person] = response.users.filter(el => el._id != userId);
 
-      Message.create({ text: message, user: userId, username: username })
-        .then(message => {
+        User.findById(person._id).then(async data => {
+          const lang = data.defaultLanguage;
+          const result = await messageFromFrontEnd(message, lang);
+          const newMessage = result[0].translations;
+          const newAndImprovedMessage = newMessage[0].text;
 
-          io.to(`${socketId}`).emit("message", message);
-          Room.findOneAndUpdate(
-            { _id: roomId },
-            { $push: { messages: message._id } }
-          ).then(room => {
-            Message.create({
-              text: newAndImprovedMessage,
-              username: username,
-              user: userId
-            }).then(msg => {
-              socket.to(roomId).broadcast.emit("message", msg);
+          Message.create({
+            text: message,
+            translation: newAndImprovedMessage,
+            user: userId,
+            username: username
+          })
+            .then(message => {
+              console.log(message);
+              io.to(`${socketId}`).emit("message", message);
+              socket.to(roomId).broadcast.emit("message", message);
               Room.findOneAndUpdate(
                 { _id: roomId },
-                { $push: { messages: msg._id } }
+                { $push: { messages: message._id } }
               ).then(room => {});
-            });
-          });
-        })
-        .catch(err => console.log(err));
-    }
-  );
-
+            })
+            .catch(err => console.log(err));
+        });
+      });
+  });
   socket.on("disconnect", function() {
     emitUsers();
     console.log("User disconnected");
   });
 });
-
-// io.sockets.connected[user2.connection.socketId].join(room.name);
-// console.log(io.sockets.adapter.rooms[room.name]);
-// io.to(room.name).emit("privateRoom", room);
-
-// socket.on("message", async ({ message, userId, username, socketId }) => {
-//   const result = await messageFromFrontEnd(message);
-//   const newMessage = result[0].translations;
-//   const newAndImprovedMessage = newMessage[0].text;
-//   //  const realThing= `${message}
-//   //  ${newAndImprovedMessage}`
-
-//   Message.create({
-//     text: message,
-//     username: username
-//   })
-//     .then(msg => {
-//       io.to(`${socketId}`).emit("message", msg);
-//     })
-//     .catch(err => console.log(err));
-
-//   Message.create({
-//     text: newAndImprovedMessage,
-//     username: username
-//   })
-//     .then(msg => {
-//       socket.broadcast.emit("message", msg);
-//     })
-//     .catch(err => console.log(err));
-// });
-
-// socket.on("room", ({ userId }) => {
-//   Room.create({ users: [userId], messages: [] })
-//     .then(room => {
-//       console.log("ROOM CREATED", room);
-//       socket.emit("room", room);
-//     })
-//     .catch(err => console.log(err));
-// });

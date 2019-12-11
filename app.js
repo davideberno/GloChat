@@ -14,7 +14,8 @@ const passport = require("passport");
 
 mongoose
   .connect(process.env.MONGODB_URI || "mongodb://localhost/glochat", {
-    useNewUrlParser: true
+    useNewUrlParser: true,
+    useUnifiedTopology: true
   })
   .then(x => {
     console.log(

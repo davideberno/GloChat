@@ -1,17 +1,18 @@
 import React, { Component } from "react";
 import { Button, Col } from "react-bootstrap";
+
 class Users extends Component {
   getCountyFlag = countryCode =>
     `https://www.countryflags.io/${countryCode}/flat/64.png`;
 
   render() {
     return (
-      <Col xs={3} className="bg-light">
+      <Col xs={3} className="bg-secondary">
         <h2>Conversations</h2>
         {this.props.rooms.map(room => {
           return (
             <Col key={room._id}>
-              <Button onClick={() => this.props.getMessages(room)}>
+              <Button onClick={() => this.props.joinRoom(room)}>
                 {room.users.map(user => `${user.username} `)}
               </Button>
             </Col>

@@ -7,7 +7,6 @@ class ChatTest extends Component {
   state = {
     message: "",
     profilePic: "",
-
     user: this.props.user,
     rooms: [],
     messages: [],
@@ -44,8 +43,6 @@ class ChatTest extends Component {
             src={this.state.profilePic}
             style={{
               border: "2px solid black",
-              margin: "30px  20px",
-
               width: "10vw"
             }}
             alt="profile"
