@@ -32,7 +32,6 @@ let endpoint = process.env[endpoint_var];
 // wait promise and return it
 
 // async function message(text, arr) {
-let 
 
 
 async function messageFromFrontEnd(text, lgTrans) {

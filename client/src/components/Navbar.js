@@ -75,13 +75,13 @@ const NavBar = props => {
               Login
             </Link>
 
-            <Link
+            <a
               className="text-white ml-4"
               style={{ textDecoration: "none", fontSize: "20px" }}
-              to="/auth/google"
+              href={`${process.env.REACT_APP_SERVER_URL || ""}/auth/google`}
             >
               Sign in with Google
-            </Link>
+            </a>
           </React.Fragment>
         )}
       </Nav>
